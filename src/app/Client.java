@@ -6,69 +6,56 @@ import java.util.Scanner;
 
 public class Client {
 
-    public static void chatPrinter(int roomPort, String username) throws IOException {
+    public static void chatPrinter(int roomPort, String username, MulticastSocket listenerSocket, InetAddress groupIp) {
+        try {
+            byte[] listenerBuffer = new byte[1000];
+            String command = "";
 
-        MulticastSocket listenerSocket = new MulticastSocket(roomPort);
-        byte[] listenerBuffer = new byte[1000];
-        InetAddress groupIp = InetAddress.getByName("228.0.0.4");
-        listenerSocket.joinGroup(groupIp);
+            while (!command.equals(username + ": " + "!leave")) { // get messages from others in group
+                DatagramPacket messageIn = new DatagramPacket(listenerBuffer, listenerBuffer.length);
+                listenerSocket.receive(messageIn);
+                command = new String(messageIn.getData()).trim();
+                System.out.println(command);
+                listenerBuffer = new byte[1000];
+            }
 
-        String command = "";
-
-        while (!command.equals(username + ": " + "!leave")) { // get messages from others in group
-            DatagramPacket messageIn = new DatagramPacket(listenerBuffer, listenerBuffer.length);
-            listenerSocket.receive(messageIn);
-            command = new String(messageIn.getData()).trim();
-            System.out.println(command);
-            listenerBuffer = new byte[1000];
-        }
-
-        // Announce in chat user is leaving
-        command = username + " left the room!";
-        listenerBuffer = command.getBytes();
-        DatagramPacket dataOut = new DatagramPacket(listenerBuffer, listenerBuffer.length, groupIp, roomPort);
-        listenerSocket.send(dataOut);
-
-        //ip:porta (lister+client) -> 5001 (sala 1) ---> ip:5000
-        //ip:5000
-
-
-        // Closing everything...
-        System.out.println("Listener closing...");
-        listenerSocket.leaveGroup(groupIp);
-        if(listenerSocket != null){
-            listenerSocket.close();
+            // Announce in chat user is leaving
+            command = username + " left the room!";
+            listenerBuffer = command.getBytes();
+            DatagramPacket dataOut = new DatagramPacket(listenerBuffer, listenerBuffer.length, groupIp, roomPort);
+            listenerSocket.send(dataOut);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        } finally {
+            // Closing everything...
+            System.out.println("Listener closing...");
+            if (listenerSocket != null) {
+                listenerSocket.close();
+            }
         }
     }
 
-    public static void main(String args[]) {
-
-        MulticastSocket mSocket = null;
-        Scanner input = new Scanner(System.in);
+    public static void main(String args[]) throws IOException {
 
         System.out.print("Input your username: ");
+        Scanner input = new Scanner(System.in);
         String username = input.nextLine();
 
+        int roomPort = 5001;
+        final MulticastSocket mSocket = new MulticastSocket(roomPort);
 
         try {
-            int roomPort = 5001;
-
             InetAddress groupIp = InetAddress.getByName("228.0.0.4");
-            mSocket = new MulticastSocket(roomPort);
             mSocket.joinGroup(groupIp);
 
             //Chat printer
             new Thread(() -> {
-                try {
-                    chatPrinter(roomPort, username);
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
+                chatPrinter(roomPort, username, mSocket, groupIp);
             }).start();
 
             byte[] data = null;
             String message = "";
-            while (!message.equals(username + ": " + "!leave")){
+            while (!message.equals(username + ": " + "!leave")) {
                 message = username + ": " + input.nextLine();
                 data = message.getBytes();
                 DatagramPacket dataOut = new DatagramPacket(data, data.length, groupIp, roomPort);
@@ -81,8 +68,6 @@ public class Client {
         } catch (IOException e) {
             System.out.println("IO: " + e.getMessage());
         } finally {
-            if (mSocket != null)
-                mSocket.close();
             System.out.println("App closing...");
         }
     }
