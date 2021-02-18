@@ -8,7 +8,7 @@ import java.util.Scanner;
 
 public class Client {
 
-    public static void chatPrinter(int roomPort, MulticastSocket listenerSocket, User myUser) {
+    public static void chatPrinter(int roomPort, MulticastSocket listenerSocket, MulticastSocket serverSocket, User myUser) {
         try {
             byte[] listenerBuffer = new byte[1000];
             String command = "";
@@ -51,20 +51,22 @@ public class Client {
 
         int roomPort = 5001;
         final MulticastSocket mSocket = new MulticastSocket(roomPort);
-
-        //TODO: implement server communication socket
-        final MulticastSocket serverCommunicationSocket = new MulticastSocket(roomPort);
+        final MulticastSocket serverSocket = new MulticastSocket(roomPort);
 
         try {
+
             //Client starts by connecting to room 1
             InetAddress groupIp = InetAddress.getByName("228.0.100.1");
+            mSocket.joinGroup(groupIp);
+
+            InetAddress serverIp = InetAddress.getByName("228.0.10.1");
             mSocket.joinGroup(groupIp);
 
             User myUser = new User(username, groupIp);
 
             //Chat printer
             new Thread(() -> {
-                chatPrinter(roomPort, mSocket, myUser);
+                chatPrinter(roomPort, mSocket, serverSocket, myUser);
             }).start();
 
             byte[] data = null;

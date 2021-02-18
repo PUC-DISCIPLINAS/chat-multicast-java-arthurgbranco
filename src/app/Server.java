@@ -20,6 +20,8 @@ public class Server {
             byte[] listenerBuffer = new byte[1000];
             String command = "";
 
+            rooms = new ArrayList<Room>();
+
             // Server starts with room 1
             rooms.add(new Room("1"));
 
@@ -29,6 +31,7 @@ public class Server {
                 if (result[0].equals("!create")) {
                     if(Server.rooms.stream().anyMatch(room -> room.getRoomId().equals("1"))){
                         Server.rooms.add(new Room(result[1]));
+                        System.out.println(rooms);
                     }else{
                         System.out.println("Room already exists");
                     }
@@ -55,20 +58,25 @@ public class Server {
 
     public static void main(String args[]) throws IOException {
         int roomPort = 5001;
-        final MulticastSocket serverSocket = new MulticastSocket(roomPort);
+
+        final MulticastSocket serverCommsSocket = new MulticastSocket(roomPort);
 
         // TODO: Implement userCommunicationSocket logic
-        final MulticastSocket userCommunicationSocket = new MulticastSocket(roomPort);
+        final MulticastSocket userCommsSocket = new MulticastSocket(roomPort);
 
         Scanner input = new Scanner(System.in);
 
         try {
-            InetAddress serverIp = InetAddress.getByName("228.0.10.1");
-            serverSocket.joinGroup(serverIp);
+
+            InetAddress commsIp = InetAddress.getByName("228.0.10.1");
+            userCommsSocket.joinGroup(commsIp);
+
+            InetAddress serverIp = InetAddress.getByName("228.0.10.2");
+            serverCommsSocket.joinGroup(serverIp);
 
             //Event printer
             new Thread(() -> {
-                serverCommandListener(roomPort, serverSocket);
+                serverCommandListener(roomPort, serverCommsSocket);
             }).start();
 
             byte[] data = null;
@@ -79,7 +87,7 @@ public class Server {
                 command = input.nextLine();
                 data = command.getBytes();
                 DatagramPacket dataOut = new DatagramPacket(data, data.length, serverIp, roomPort);
-                serverSocket.send(dataOut);
+                serverCommsSocket.send(dataOut);
                 data = new byte[1000]; //Cleans the buffer
             }
 
