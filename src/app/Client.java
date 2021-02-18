@@ -1,6 +1,6 @@
 package app;
 
-import Objects.User;
+import object.User;
 
 import java.net.*;
 import java.io.*;

@@ -1,9 +1,12 @@
 # chat-multicast-java-arthurgbranco
 
 Como rodar:
-1. Compile as classes a serem executadas
+1. Compile as classes
 	* `javac ./src/app/Client.java`
 	* `javac ./src/app/Server.java`
+	* `javac ./src/object/User.java`
+	* `javac ./src/object/Room.java`
+	* `javac ./src/util/Converter.java`
 
 2. Execute o servidor (tem de ser antes do cliente)
 	* `cd ./src/`

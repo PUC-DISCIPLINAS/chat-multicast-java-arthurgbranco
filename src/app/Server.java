@@ -1,6 +1,6 @@
 package app;
 
-import Objects.Room;
+import object.Room;
 
 import java.io.IOException;
 import java.net.InetAddress;
