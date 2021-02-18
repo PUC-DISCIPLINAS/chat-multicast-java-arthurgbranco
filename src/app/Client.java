@@ -18,7 +18,12 @@ public class Client {
                 DatagramPacket messageIn = new DatagramPacket(listenerBuffer, listenerBuffer.length);
                 listenerSocket.receive(messageIn);
                 command = new String(messageIn.getData()).trim();
-                System.out.println(command);
+
+                //Hiddes messages from myUser
+                String[] result = command.split(" ", 2);
+                if (!result[0].equals(myUser.getUsername() + ":")){
+                    System.out.println(command);
+                }
                 listenerBuffer = new byte[1000]; // Cleans buffer
             }
 
@@ -47,11 +52,15 @@ public class Client {
         int roomPort = 5001;
         final MulticastSocket mSocket = new MulticastSocket(roomPort);
 
-        try {
-            InetAddress groupIp = InetAddress.getByName("228.0.100.1");
-            User myUser = new User(username, groupIp);
+        //TODO: implement server communication socket
+        final MulticastSocket serverCommunicationSocket = new MulticastSocket(roomPort);
 
+        try {
+            //Client starts by connecting to room 1
+            InetAddress groupIp = InetAddress.getByName("228.0.100.1");
             mSocket.joinGroup(groupIp);
+
+            User myUser = new User(username, groupIp);
 
             //Chat printer
             new Thread(() -> {
@@ -62,14 +71,14 @@ public class Client {
             String message = "";
 
             // Messager loop, sends until user leaves
-            while (!message.equals(username + ": " + "!leave")) {
-                message = username + ": " + input.nextLine();
+            while (!message.equals(myUser.getUsername() + ": " + "!leave")) {
+                message = myUser.getUsername() + ": " + input.nextLine();
                 data = message.getBytes();
                 DatagramPacket dataOut = new DatagramPacket(data, data.length, groupIp, roomPort);
                 mSocket.send(dataOut);
                 data = new byte[1000]; //Cleans the buffer
             }
-            mSocket.leaveGroup(groupIp); // TODO: Refactor, must be in finnaly
+            mSocket.leaveGroup(groupIp); // TODO: Refactor, implement dynamic group joining and leaving
         } catch (SocketException e) {
             System.out.println("Socket: " + e.getMessage());
         } catch (IOException e) {

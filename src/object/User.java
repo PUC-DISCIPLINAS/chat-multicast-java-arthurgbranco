@@ -6,10 +6,6 @@ public class User {
     private String username;
     private InetAddress currentRoomAddress;
 
-    public User(){
-        setUsername("noname");
-    }
-
     public  User(String username, InetAddress address){
         setUsername(username);
         setCurrentRoomAddress(address);
