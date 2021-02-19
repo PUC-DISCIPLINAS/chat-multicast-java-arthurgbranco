@@ -26,4 +26,9 @@ public class User {
     public void setCurrentRoomAddress(InetAddress currentRoomAddress) {
         this.currentRoomAddress = currentRoomAddress;
     }
+
+    @Override
+    public String toString(){
+        return "Username: " + this.getUsername() + " Current Room: " + this.getCurrentRoomAddress();
+    }
 }

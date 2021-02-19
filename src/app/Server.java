@@ -20,6 +20,7 @@ public class Server {
             byte[] listenerBuffer = new byte[1000];
             String command = "";
 
+            // Server rooms initialization
             rooms = new ArrayList<Room>();
 
             // Server starts with room 1
@@ -28,27 +29,28 @@ public class Server {
             // Listening loop, prints every message on the room
             while (!command.equals("!exit")) {
                 String[] result = command.split(" ", 2);
+                // Checks for commands and do specific actions
                 if (result[0].equals("!create")) {
-                    if(Server.rooms.stream().anyMatch(room -> room.getRoomId().equals("1"))){
+                    if (!Server.rooms.stream().anyMatch(room -> room.getRoomId().equals(result[1]))) {
                         Server.rooms.add(new Room(result[1]));
-                        System.out.println(rooms);
-                    }else{
+                        System.out.println("Room created!");
+                    } else {
                         System.out.println("Room already exists");
                     }
                 } else if (result[0].equals("!delete")) {
                     Server.rooms.removeIf(room -> room.getRoomId().equals(result[1]));
-                } else {
-                    DatagramPacket messageIn = new DatagramPacket(listenerBuffer, listenerBuffer.length);
-                    listenerSocket.receive(messageIn);
-                    command = new String(messageIn.getData()).trim();
-                    System.out.println(command);
-                    listenerBuffer = new byte[1000]; // Cleans buffer
+                    System.out.println("Room deleted!");
                 }
+                DatagramPacket messageIn = new DatagramPacket(listenerBuffer, listenerBuffer.length);
+                listenerSocket.receive(messageIn);
+                command = new String(messageIn.getData()).trim();
+                listenerBuffer = new byte[1000]; // Cleans buffer
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         } finally {
             // Closing everything...
+            System.out.println(rooms.toString()); // TODO: for debug reasons, remove later
             System.out.println("Server Command Listener closing...");
             if (listenerSocket != null) {
                 listenerSocket.close();
