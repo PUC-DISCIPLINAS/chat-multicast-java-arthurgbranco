@@ -20,7 +20,6 @@ public class Room {
         return roomAddress;
     }
 
-
     private void setRoomAddress(String roomNumber) throws IOException {
             this.roomAddress = convertStringToInet(roomNumber);
     }

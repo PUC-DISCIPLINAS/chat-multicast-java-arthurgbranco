@@ -49,7 +49,7 @@ public class Client {
                     listenerSocket.joinGroup(myUser.getCurrentRoomAddress());
                 }
 
-                //Hiddes messages from myUser
+                //Hides messages from myUser
                 if (!result[0].equals(myUser.getUsername() + ":")){
                     System.out.println(message);
                 }
