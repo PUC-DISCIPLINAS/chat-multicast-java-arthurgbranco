@@ -1,9 +1,0 @@
-Server:
-    - Server should print info on data beeing sent and received (low priority)
-
-Client:
-    - Client should check if room exists before joining (on Server rooms array)
-    - Client should  display "Server no initialized if there is no room 1"
-
-object:
-    - Class that serializes objects before sending the packets and deserializes them before others classes can use it
