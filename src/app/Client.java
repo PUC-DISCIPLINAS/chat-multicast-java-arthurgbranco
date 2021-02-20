@@ -9,9 +9,9 @@ import java.util.Scanner;
 
 public class Client {
 
-    public static MulticastSocket listenerSocket;
-    public static MulticastSocket serverSocket;
-    public static final int roomPort = 5001;
+    static MulticastSocket listenerSocket;
+    static MulticastSocket serverSocket;
+    static final int roomPort = 5001;
 
     static {
         try {
@@ -35,19 +35,7 @@ public class Client {
                 listenerSocket.receive(messageIn);
                 message = new String(messageIn.getData()).trim();
 
-                // TODO: migrate this section to messager loop
                 String[] result = message.split(" ", 3);
-                if(result[0].equals(myUser.getUsername() + ":") && result[1].equals("!join")){
-                    message = myUser.getUsername() + " joined room " + result[2];
-                    data = message.getBytes();
-                    dataOut = new DatagramPacket(data, data.length, myUser.getCurrentRoomAddress(), roomPort);
-                    listenerSocket.send(dataOut);
-
-                    // Updates User current room and joins new group
-                    listenerSocket.leaveGroup(myUser.getCurrentRoomAddress());
-                    myUser.setCurrentRoomAddress(Room.convertStringToInet(result[2]));
-                    listenerSocket.joinGroup(myUser.getCurrentRoomAddress());
-                }
 
                 //Hides messages from myUser
                 if (!result[0].equals(myUser.getUsername() + ":")){
@@ -56,12 +44,6 @@ public class Client {
 
                 data = new byte[1000]; // Cleans buffer
             }
-
-            // Announce in chat user is leaving
-            message = myUser.getUsername() + " left the room!";
-            data = message.getBytes();
-            dataOut = new DatagramPacket(data, data.length, myUser.getCurrentRoomAddress(), roomPort);
-            listenerSocket.send(dataOut);
         } catch (IOException e) {
             throw new UncheckedIOException((IOException) e);
         } finally {
@@ -82,14 +64,14 @@ public class Client {
         try {
 
             //Client starts by connecting to room 1
-            InetAddress groupIp = InetAddress.getByName("228.0.100.1");
-            listenerSocket.joinGroup(groupIp);
+            InetAddress clientIp = InetAddress.getByName("228.0.100.1");
+            listenerSocket.joinGroup(clientIp);
 
             InetAddress serverIp = InetAddress.getByName("228.0.10.1");
-            serverSocket.joinGroup(groupIp);
+            serverSocket.joinGroup(clientIp);
 
             //Client user
-            User myUser = new User(username, groupIp);
+            User myUser = new User(username, clientIp);
 
             //Chat printer
             new Thread(() -> {
@@ -100,7 +82,7 @@ public class Client {
             byte[] data = null;
             String message = myUser.getUsername() + " joined the server!";
             data = message.getBytes();
-            DatagramPacket dataOut = new DatagramPacket(data, data.length, groupIp, roomPort);
+            DatagramPacket dataOut = new DatagramPacket(data, data.length, clientIp, roomPort);
             listenerSocket.send(dataOut);
             data = new byte[1000];
 
@@ -116,11 +98,36 @@ public class Client {
             // Messager loop, sends until user leaves
             while (!message.equals(myUser.getUsername() + ": " + "!leave")) {
                 message = myUser.getUsername() + ": " + input.nextLine();
+                String[] result = message.split(" ", 3);
                 data = message.getBytes();
-                dataOut = new DatagramPacket(data, data.length, groupIp, roomPort);
-                listenerSocket.send(dataOut);
+                dataOut = new DatagramPacket(data, data.length, myUser.getCurrentRoomAddress(), roomPort);
+
+                if(result[0].equals(myUser.getUsername() + ":") && result[1].equals("!join")){
+                    message = myUser.getUsername() + " joined room " + result[2];
+                    data = message.getBytes();
+                    dataOut = new DatagramPacket(data, data.length, myUser.getCurrentRoomAddress(), roomPort);
+                    serverSocket.send(dataOut);
+
+                    // Updates User current room and joins new group
+                    listenerSocket.leaveGroup(myUser.getCurrentRoomAddress());
+                    myUser.setCurrentRoomAddress(Room.convertStringToInet(result[2]));
+                    listenerSocket.joinGroup(myUser.getCurrentRoomAddress());
+
+                }else if (result[0].equals(myUser.getUsername() + ":") && (result[1].equals("!rooms")) || (result[1].equals("!users")) ) {
+                    System.out.println(message);
+                    serverSocket.send(dataOut);
+                }else{
+                    listenerSocket.send(dataOut);
+                }
                 data = new byte[1000]; //Cleans the buffer
             }
+
+            // Closes the listener
+            message = myUser.getUsername() + ": !leave";
+            data = message.getBytes();
+            dataOut = new DatagramPacket(data, data.length, myUser.getCurrentRoomAddress(), roomPort);
+            serverSocket.send(dataOut);
+
         } catch (SocketException e) {
             System.out.println("Socket: " + e.getMessage());
         } catch (IOException e) {
