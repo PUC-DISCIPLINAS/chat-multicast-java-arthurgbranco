@@ -9,6 +9,8 @@ import java.util.Scanner;
 
 public class Client {
 
+    static InetAddress clientIp;
+    static InetAddress serverIp;
     static MulticastSocket listenerSocket;
     static MulticastSocket serverSocket;
     static final int roomPort = 5001;
@@ -17,6 +19,9 @@ public class Client {
         try {
             listenerSocket = new MulticastSocket(new InetSocketAddress(roomPort));
             serverSocket = new MulticastSocket(new InetSocketAddress(roomPort));
+
+            serverIp = InetAddress.getByName("228.0.10.1");
+            clientIp = InetAddress.getByName("228.0.100.1");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -24,14 +29,14 @@ public class Client {
 
     public static void chatPrinter(User myUser) {
         try {
-
             byte[] data = new byte[1000];
             String message = "";
             DatagramPacket dataOut;
+            DatagramPacket messageIn;
 
             // Listening loop, prints every message on the room
             while (!message.equals(myUser.getUsername() + ": " + "!leave")) {
-                DatagramPacket messageIn = new DatagramPacket(data, data.length);
+                messageIn = new DatagramPacket(data, data.length);
                 listenerSocket.receive(messageIn);
                 message = new String(messageIn.getData()).trim();
 
@@ -60,63 +65,55 @@ public class Client {
         System.out.print("Input your username: ");
         Scanner input = new Scanner(System.in);
         String username = input.nextLine();
+        byte[] data = new byte[1000];
+        String message = null;
+        DatagramPacket messageIn = null;
+        DatagramPacket dataOut = null;
 
         try {
 
             //Client starts by connecting to room 1
-            InetAddress clientIp = InetAddress.getByName("228.0.100.1");
             listenerSocket.joinGroup(clientIp);
-
-            InetAddress serverIp = InetAddress.getByName("228.0.10.1");
-            serverSocket.joinGroup(clientIp);
+            serverSocket.joinGroup(serverIp);
 
             //Client user
             User myUser = new User(username, clientIp);
+
+            // Alerts user joined the server
+            message = myUser.getUsername() + " joined the server!";
+            data = message.getBytes();
+            dataOut = new DatagramPacket(data, data.length, clientIp, roomPort);
+            listenerSocket.send(dataOut);
+            data = new byte[1000];
 
             //Chat printer
             new Thread(() -> {
                 chatPrinter(myUser);
             }).start();
 
-            // Alerts user joined the server
-            byte[] data = null;
-            String message = myUser.getUsername() + " joined the server!";
-            data = message.getBytes();
-            DatagramPacket dataOut = new DatagramPacket(data, data.length, clientIp, roomPort);
-            listenerSocket.send(dataOut);
-            data = new byte[1000];
-
-            //TODO: transform in method that checks if server is initialized
-//            while (Server.rooms == null) { // does not work, needs to exchange data with socket
-//                System.out.println("Waiting for server initialization...");
-//                System.out.println(Server.rooms);
-//                Thread.sleep(5000);
-//            }
-//            System.out.print("\033[H\033[2J");
-//            System.out.flush();
-
             // Messager loop, sends until user leaves
             while (!message.equals(myUser.getUsername() + ": " + "!leave")) {
                 message = myUser.getUsername() + ": " + input.nextLine();
                 String[] result = message.split(" ", 3);
                 data = message.getBytes();
-                dataOut = new DatagramPacket(data, data.length, myUser.getCurrentRoomAddress(), roomPort);
+
 
                 if(result[0].equals(myUser.getUsername() + ":") && result[1].equals("!join")){
                     message = myUser.getUsername() + " joined room " + result[2];
                     data = message.getBytes();
-                    dataOut = new DatagramPacket(data, data.length, myUser.getCurrentRoomAddress(), roomPort);
+                    dataOut = new DatagramPacket(data, data.length, serverIp, roomPort);
                     serverSocket.send(dataOut);
 
                     // Updates User current room and joins new group
                     listenerSocket.leaveGroup(myUser.getCurrentRoomAddress());
                     myUser.setCurrentRoomAddress(Room.convertStringToInet(result[2]));
                     listenerSocket.joinGroup(myUser.getCurrentRoomAddress());
-
                 }else if (result[0].equals(myUser.getUsername() + ":") && (result[1].equals("!rooms")) || (result[1].equals("!users")) ) {
-                    System.out.println(message);
+                    data = message.getBytes();
+                    dataOut = new DatagramPacket(data, data.length, serverIp, roomPort);
                     serverSocket.send(dataOut);
                 }else{
+                    dataOut = new DatagramPacket(data, data.length, myUser.getCurrentRoomAddress(), roomPort);
                     listenerSocket.send(dataOut);
                 }
                 data = new byte[1000]; //Cleans the buffer

@@ -25,24 +25,38 @@ public class Server {
         }
     }
 
-    public static void serverCommandListener() {
+    public static void serverCommandListener(InetAddress clientIp) {
         try {
-            byte[] listenerBuffer = new byte[1000];
+            byte[] data = new byte[1000];
             String message = "";
+            StringBuilder finalStr = new StringBuilder("Server: ");
+            DatagramPacket messageIn;
+            DatagramPacket dataOut;
 
             // Listening loop, prints every message on the room
             while (!message.equals("!exit")) {
-                DatagramPacket messageIn = new DatagramPacket(listenerBuffer, listenerBuffer.length);
+                messageIn = new DatagramPacket(data, data.length);
                 clientSocket.receive(messageIn);
                 message = new String(messageIn.getData()).trim();
-                System.out.println(message);
-                listenerBuffer = new byte[1000]; // Cleans buffer
+                System.out.println("Debug, Message in: " + message); //TODO: remove
+                String[] result = message.split(" ", 3);
+                if (result[1].equals("!rooms")){
+                    System.out.println("rooms received!");
+                }else if (result[1].equals("!users")){
+                    System.out.println("users received!");
+                }else if (result[1].equals("!exit")){
+                    message = "!exit";
+                }
+                data = new byte[1000]; // Cleans buffer
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         } finally {
             // Closing everything...
             System.out.println(rooms.toString()); // TODO: for debug reasons, remove later
+            if (clientSocket != null) {
+                clientSocket.close();
+            }
             System.out.println("Server Command Listener closing...");
         }
     }
@@ -60,7 +74,7 @@ public class Server {
 
             //Event printer
             new Thread(() -> {
-                serverCommandListener();
+                serverCommandListener(clientIp);
             }).start();
 
             byte[] data = null;
@@ -87,15 +101,17 @@ public class Server {
                 }
             }
 
+            message = "Server: !exit";
+            data = message.getBytes();
+            DatagramPacket dataOut = new DatagramPacket(data, data.length, clientIp, roomPort);
+            clientSocket.send(dataOut);
+
         } catch (SocketException e) {
             System.out.println("Socket: " + e.getMessage());
         } catch (IOException e) {
             System.out.println("IO: " + e.getMessage());
         } finally {
             // Closing everything...
-            if (clientSocket != null) {
-                clientSocket.close();
-            }
             System.out.println("Server closing...");
         }
     }
