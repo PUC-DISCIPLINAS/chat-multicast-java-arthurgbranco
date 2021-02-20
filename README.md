@@ -1,5 +1,8 @@
 # chat-multicast-java-arthurgbranco
 
+Trabalho de Chat utilizando java e Multicast
+Autor: Arthur Gramiscelli Branco
+
 Como rodar:
 1. Compile as classes
 	* `javac ./src/app/Client.java`
@@ -17,14 +20,10 @@ Como rodar:
 
 ### Comandos do cliente:
 
-
-* `!join 1` Faz com que o usuario entre na sala 1
+* `!join 1` Faz com que o usuario entre na sala 1 (Caso o usuario tente entrar em uma sala que nao existe, um excessao sera lancada)
 
 
 * `!rooms` Lista as salas com usuarios conectados
-
-
-* `!users` Lista os usuarios conectados na sala atual
 
 
 * `!leave` Faz com que o usuario saia da sala atual e finalize o processo do cliente

@@ -27,12 +27,46 @@ public class Client {
         }
     }
 
+    public static void serverPrinter(User myUser) {
+        try {
+            byte[] data = new byte[1000];
+            String message = "";
+            DatagramPacket messageIn;
+            String[] result;
+
+
+            while (!message.equals("Server: !exit")) {
+                messageIn = new DatagramPacket(data, data.length);
+                serverSocket.receive(messageIn);
+                message = new String(messageIn.getData()).trim();
+                data = new byte[1000];
+                result = message.split(" ", 3);
+
+                //Hides messages from myUser
+                if (!result[0].equals(myUser.getUsername() + ":")) {
+                    System.out.println(message);
+                }
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException((IOException) e);
+        } catch (Exception e){
+            e.printStackTrace();
+        } finally {
+            // Closing everything...
+            System.out.println("Server Listener closing...");
+            if (serverSocket != null) {
+                serverSocket.close();
+            }
+        }
+    }
+
     public static void chatPrinter(User myUser) {
         try {
             byte[] data = new byte[1000];
             String message = "";
             DatagramPacket dataOut;
             DatagramPacket messageIn;
+            String[] result;
 
             // Listening loop, prints every message on the room
             while (!message.equals(myUser.getUsername() + ": " + "!leave")) {
@@ -40,10 +74,10 @@ public class Client {
                 listenerSocket.receive(messageIn);
                 message = new String(messageIn.getData()).trim();
 
-                String[] result = message.split(" ", 3);
+                result = message.split(" ", 3);
 
                 //Hides messages from myUser
-                if (!result[0].equals(myUser.getUsername() + ":")){
+                if (!result[0].equals(myUser.getUsername() + ":")) {
                     System.out.println(message);
                 }
 
@@ -51,6 +85,8 @@ public class Client {
             }
         } catch (IOException e) {
             throw new UncheckedIOException((IOException) e);
+        } catch (Exception e){
+            e.printStackTrace();
         } finally {
             // Closing everything...
             System.out.println("Listener closing...");
@@ -77,19 +113,24 @@ public class Client {
             serverSocket.joinGroup(serverIp);
 
             //Client user
-            User myUser = new User(username, clientIp);
+            User myUser = new User(username, "1");
 
-            // Alerts user joined the server
-            message = myUser.getUsername() + " joined the server!";
-            data = message.getBytes();
-            dataOut = new DatagramPacket(data, data.length, clientIp, roomPort);
-            listenerSocket.send(dataOut);
-            data = new byte[1000];
+            //Server printer
+            new Thread(() -> {
+                serverPrinter(myUser);
+            }).start();
 
             //Chat printer
             new Thread(() -> {
                 chatPrinter(myUser);
             }).start();
+
+            // Alerts user joined the server
+            message = myUser.getUsername() + " joined room 1";
+            data = message.getBytes();
+            dataOut = new DatagramPacket(data, data.length, serverIp, roomPort);
+            serverSocket.send(dataOut);
+            data = new byte[1000];
 
             // Messager loop, sends until user leaves
             while (!message.equals(myUser.getUsername() + ": " + "!leave")) {
@@ -97,39 +138,40 @@ public class Client {
                 String[] result = message.split(" ", 3);
                 data = message.getBytes();
 
-
-                if(result[0].equals(myUser.getUsername() + ":") && result[1].equals("!join")){
+                if (result[0].equals(myUser.getUsername() + ":") && result[1].equals("!join")) {
                     message = myUser.getUsername() + " joined room " + result[2];
                     data = message.getBytes();
                     dataOut = new DatagramPacket(data, data.length, serverIp, roomPort);
                     serverSocket.send(dataOut);
 
                     // Updates User current room and joins new group
-                    listenerSocket.leaveGroup(myUser.getCurrentRoomAddress());
-                    myUser.setCurrentRoomAddress(Room.convertStringToInet(result[2]));
-                    listenerSocket.joinGroup(myUser.getCurrentRoomAddress());
-                }else if (result[0].equals(myUser.getUsername() + ":") && (result[1].equals("!rooms")) || (result[1].equals("!users")) ) {
+                    listenerSocket.leaveGroup(Room.convertStringToInet(myUser.getCurrentRoomId()));
+                    myUser.setCurrentRoomId(result[2]);
+                    listenerSocket.joinGroup(Room.convertStringToInet(myUser.getCurrentRoomId()));
+                } else if (result[0].equals(myUser.getUsername() + ":") && (result[1].equals("!rooms")) || (result[1].equals("!users") || (result[1].equals("!leave")))) {
                     data = message.getBytes();
                     dataOut = new DatagramPacket(data, data.length, serverIp, roomPort);
                     serverSocket.send(dataOut);
-                }else{
-                    dataOut = new DatagramPacket(data, data.length, myUser.getCurrentRoomAddress(), roomPort);
+                } else {
+                    dataOut = new DatagramPacket(data, data.length, Room.convertStringToInet(myUser.getCurrentRoomId()), roomPort);
                     listenerSocket.send(dataOut);
                 }
                 data = new byte[1000]; //Cleans the buffer
             }
 
             // Closes the listener
-            message = myUser.getUsername() + ": !leave";
+            message = myUser.getUsername() + ": !leave ";
             data = message.getBytes();
-            dataOut = new DatagramPacket(data, data.length, myUser.getCurrentRoomAddress(), roomPort);
+            dataOut = new DatagramPacket(data, data.length, Room.convertStringToInet(myUser.getCurrentRoomId()), roomPort);
             serverSocket.send(dataOut);
 
         } catch (SocketException e) {
             System.out.println("Socket: " + e.getMessage());
         } catch (IOException e) {
             System.out.println("IO: " + e.getMessage());
-        } finally {
+        } catch (Exception e){
+            e.printStackTrace();
+        }finally {
             System.out.println("App closing...");
         }
     }

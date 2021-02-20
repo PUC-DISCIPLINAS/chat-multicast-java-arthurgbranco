@@ -1,6 +1,7 @@
 package app;
 
 import object.Room;
+import object.User;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -9,18 +10,22 @@ import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import java.util.Scanner;
 
 public class Server {
 
     static int roomPort = 5001;
     static MulticastSocket clientSocket;
-    static ArrayList<Room> rooms = new ArrayList<>();
+    static List<Room> rooms = new ArrayList<>();
 
     static {
         try {
             clientSocket = new MulticastSocket(roomPort);
         } catch (IOException e) {
+            e.printStackTrace();
+        } catch (Exception e){
             e.printStackTrace();
         }
     }
@@ -38,19 +43,47 @@ public class Server {
                 messageIn = new DatagramPacket(data, data.length);
                 clientSocket.receive(messageIn);
                 message = new String(messageIn.getData()).trim();
-                System.out.println("Debug, Message in: " + message); //TODO: remove
-                String[] result = message.split(" ", 3);
-                if (result[1].equals("!rooms")){
-                    System.out.println("rooms received!");
-                }else if (result[1].equals("!users")){
-                    System.out.println("users received!");
-                }else if (result[1].equals("!exit")){
-                    message = "!exit";
+                String[] result = message.split(" ", 4);
+                String username = result[0].substring(0, result[0].length());
+                if(result[1].equals("joined") && result[2].equals("room")){
+                    String roomId = result[3];
+                    User user = new User(username, roomId);
+
+                    System.out.println("Before: " + rooms);
+                    for (Room r: rooms){
+                        r.getConnectedUsers().removeIf(u -> u.getUsername().equals(username));
+                    }
+
+                    Optional<Room> room = rooms.stream().filter(r -> r.getRoomId().equals(roomId)).findFirst();
+                    room.get().getConnectedUsers().add(user);
+                    System.out.println("After: " + rooms);
+                }
+
+                switch (result[1]){
+                    case "!rooms":
+                        message = "Server: " + rooms.toString();
+                        data = message.getBytes();
+                        dataOut = new DatagramPacket(data, data.length, clientIp, roomPort);
+                        clientSocket.send(dataOut);
+                        break;
+                    case "!leave":
+                        for (Room r: rooms){
+                            r.getConnectedUsers().removeIf(u -> u.getUsername().equals(username));
+                        }
+                        message = username + " left the server!";
+                        data = message.getBytes();
+                        dataOut = new DatagramPacket(data, data.length, clientIp, roomPort);
+                        clientSocket.send(dataOut);
+                        break;
+                    case "!exit":
+                        message = "!exit";
                 }
                 data = new byte[1000]; // Cleans buffer
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
+        } catch (Exception e){
+            e.printStackTrace();
         } finally {
             // Closing everything...
             System.out.println(rooms.toString()); // TODO: for debug reasons, remove later

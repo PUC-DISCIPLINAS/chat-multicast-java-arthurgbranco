@@ -4,11 +4,12 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.List;
 
 public class Room {
     private String roomId;
     private InetAddress roomAddress;
-    private ArrayList<User> connectedUsers;
+    private List<User> connectedUsers;
 
     public Room(String roomNumber) throws IOException {
         setRoomId(roomNumber);
@@ -36,7 +37,7 @@ public class Room {
         return groupIp;
     }
 
-    public ArrayList<User> getConnectedUsers() {
+    public List<User> getConnectedUsers() {
         return connectedUsers;
     }
 
@@ -55,6 +56,6 @@ public class Room {
 
     @Override
     public String toString(){
-        return "Id: " + this.getRoomId() + " Address: " + this.getRoomAddress() + " Users: " + this.getConnectedUsers();
+        return "Room id: " + this.getRoomId() + " Users: " + this.getConnectedUsers();
     }
 }

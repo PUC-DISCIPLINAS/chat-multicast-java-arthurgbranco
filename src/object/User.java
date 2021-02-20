@@ -4,11 +4,11 @@ import java.net.InetAddress;
 
 public class User {
     private String username;
-    private InetAddress currentRoomAddress;
+    private String currentRoomId;
 
-    public  User(String username, InetAddress address){
+    public  User(String username, String currentRoomId){
         setUsername(username);
-        setCurrentRoomAddress(address);
+        setCurrentRoomId(currentRoomId);
     }
 
     public String getUsername() {
@@ -19,16 +19,16 @@ public class User {
         this.username = username;
     }
 
-    public InetAddress getCurrentRoomAddress() {
-        return currentRoomAddress;
+    public String getCurrentRoomId() {
+        return currentRoomId;
     }
 
-    public void setCurrentRoomAddress(InetAddress currentRoomAddress) {
-        this.currentRoomAddress = currentRoomAddress;
+    public void setCurrentRoomId(String currentRoomId) {
+        this.currentRoomId = currentRoomId;
     }
 
     @Override
     public String toString(){
-        return "Username: " + this.getUsername() + " Current Room: " + this.getCurrentRoomAddress();
+        return this.getUsername();
     }
 }
