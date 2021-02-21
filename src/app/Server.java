@@ -49,14 +49,12 @@ public class Server {
                     String roomId = result[3];
                     User user = new User(username, roomId);
 
-                    System.out.println("Before: " + rooms);
                     for (Room r: rooms){
                         r.getConnectedUsers().removeIf(u -> u.getUsername().equals(username));
                     }
 
                     Optional<Room> room = rooms.stream().filter(r -> r.getRoomId().equals(roomId)).findFirst();
                     room.get().getConnectedUsers().add(user);
-                    System.out.println("After: " + rooms);
                 }
 
                 switch (result[1]){

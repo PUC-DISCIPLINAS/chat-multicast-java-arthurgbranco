@@ -19,7 +19,7 @@ Como rodar:
 3. Execute o cliente
 	* `java app.Client`
 
-### Comandos do cliente:
+### Comandos do cliente (Comandos executados na janela do Cliente):
 
 * `!join 1` Faz com que o usuario entre na sala 1 (Caso o usuario tente entrar em uma sala que nao existe, um excessao sera lancada)
 
@@ -29,7 +29,7 @@ Como rodar:
 
 * `!leave` Faz com que o usuario saia da sala atual e finalize o processo do cliente
 
-### Comandos do servidor:
+### Comandos do servidor (Comandos executados na janela do Servidor):
 
 * `!create 1` Faz com que a sala 1 seja criada
 
